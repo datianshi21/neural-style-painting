@@ -8,6 +8,7 @@ import numpy as np
 import scipy.io
 import scipy.misc
 import tensorflow as tf
+import imageio
 
 ###############################################################################
 # Constants for the image input and output.
@@ -15,13 +16,13 @@ import tensorflow as tf
 
 # Output folder for the images.
 #OUTPUT_DIR = 'output/'
-OUTPUT_DIR = 'output2/'
+OUTPUT_DIR = 'output4/'
 # Style image to use.
 # STYLE_IMAGE = 'images/starry_night.jpg'
 STYLE_IMAGE = 'images/StarryNight.jpg'
 # Content image to use.
 # CONTENT_IMAGE = 'images/hong_kong_2.jpg'
-CONTENT_IMAGE = 'images/Macau.jpg'
+CONTENT_IMAGE = 'images/guomao.jpg'
 # Image dimensions constants. 
 IMAGE_WIDTH = 800
 IMAGE_HEIGHT = 600
@@ -78,7 +79,9 @@ def save_image(path, image):
     # Get rid of the first useless dimension, what remains is the image.
     image = image[0]
     image = np.clip(image, 0, 255).astype('uint8')
-    scipy.misc.imsave(path, image)
+    #scipy.misc.imsave(path, image)
+    imageio.imwrite(path, image)
+    return
 
 def load_vgg_model(path):
     """
@@ -144,9 +147,22 @@ def load_vgg_model(path):
         """
         W = vgg_layers[0][layer][0][0][0][0][0]
         b = vgg_layers[0][layer][0][0][0][0][1]
+        layer_detail = vgg_layers[0][layer][0][0][0][0]
         layer_name = vgg_layers[0][layer][0][0][-2]
+        print ("W is : ", vgg_layers[0][layer][0][0][2][0][0])
+        print ("b is : ", vgg_layers[0][layer][0][0][2][0][1])
+        print ("Layer name detials: ", layer_detail)
         print ("Layer name is: ", layer_name)
         print ("Expected layer name is: ", expected_layer_name)
+        assert layer_name == expected_layer_name
+        return W, b
+    
+    def _weights2(layer, expected_layer_name):
+        layer_name = vgg_layers[0][layer][0][0][0][0]
+        W = vgg_layers[0][layer][0][0][2][0][0]
+        b = vgg_layers[0][layer][0][0][2][0][1]
+        print ("W is: ", W)
+        print ("b is: ", b)
         assert layer_name == expected_layer_name
         return W, b
 
@@ -162,7 +178,8 @@ def load_vgg_model(path):
         Return the Conv2D layer using the weights, biases from the VGG
         model at 'layer'.
         """
-        W, b = _weights(layer, layer_name)
+        #W, b = _weights(layer, layer_name)
+        W, b = _weights2(layer, layer_name)
         W = tf.constant(W)
         b = tf.constant(np.reshape(b, (b.size)))
         return tf.nn.conv2d(
@@ -311,6 +328,8 @@ if __name__ == '__main__':
             sess.run(train_step)
             if it%100 == 0:
                 # Print every 100 iteration.
+                if it%5 == 0:
+                    print ("Iteration is : ", it)
                 mixed_image = sess.run(model['input'])
                 print('Iteration %d' % (it))
                 print('sum : ', sess.run(tf.reduce_sum(mixed_image)))
@@ -319,6 +338,6 @@ if __name__ == '__main__':
                 if not os.path.exists(OUTPUT_DIR):
                     os.mkdir(OUTPUT_DIR)
 
-                filename = 'output/%d.png' % (it)
+                filename = 'output4/%d.png' % (it)
                 save_image(filename, mixed_image)
 
